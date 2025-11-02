@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Signup</title>
+    <script>
+        async function handleSignup(event) {
+            event.preventDefault();
+            const formData = new FormData();
+            formData.append('name', document.getElementById('name').value);
+            formData.append('email', document.getElementById('email').value);
+            formData.append('phone', document.getElementById('phone').value);
+            formData.append('username', document.getElementById('username').value);
+            formData.append('password', document.getElementById('password').value);
+            const profileImage = document.getElementById('profile_image').files[0];
+            if (profileImage) {
+                formData.append('profile_image', profileImage);
+            }
+
+            const response = await fetch('/api/signup', {
+                method: 'POST',
+                body: formData
+            });
+            const result = await response.json();
+
+            if (response.ok) {
+                alert('Signup successful! Check your email if confirmation is required.');
+                window.location.href = '/';
+            } else {
+                alert('Error: ' + result.error);
+            }
+        }
+    </script>
+</head>
+<body>
+    <h1>Signup</h1>
+    <form onsubmit="handleSignup(event)">
+        <label for="name">Name:</label>
+        <input type="text" id="name" required><br><br>
+        <label for="email">Email:</label>
+        <input type="email" id="email" required><br><br>
+        <label for="phone">Phone (e.g., +1 1234567890):</label>
+        <input type="tel" id="phone" required><br><br>
+        <label for="username">Username:</label>
+        <input type="text" id="username" required><br><br>
+        <label for="password">Password:</label>
+        <input type="password" id="password" required><br><br>
+        <label for="profile_image">Profile Image:</label>
+        <input type="file" id="profile_image" accept="image/*"><br><br>
+        <button type="submit">Signup</button>
+    </form>
+    <button onclick="window.location.href='/'">Back</button>
+</body>
+</html>
