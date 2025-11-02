@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, render_template, send_from_directory
+from flask import Flask, request, jsonify, render_template
 from supabase import create_client, Client
 from werkzeug.utils import secure_filename
 import os
@@ -9,11 +9,11 @@ app.config['UPLOAD_FOLDER'] = 'uploads'  # Temporary folder for file uploads
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 # Supabase credentials
-SUPABASE_URL = "https://buenbdkodjrpzsfjsddu.supabase.co"
-SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ1ZW5iZGtvZGpycHpzZmpzZGR1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIwOTM3MjQsImV4cCI6MjA3NzY2OTcyNH0.8AOdXZtF3kaNnJ8dSEpEinD4RZM7GEy-nVtTV3o81B4"
+SUPABASE_URL = os.getenv('SUPABASE_URL', 'https://buenbdkodjrpzsfjsddu.supabase.co')
+SUPABASE_KEY = os.getenv('SUPABASE_KEY', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ1ZW5iZGtvZGpycHpzZmpzZGR1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIwOTM3MjQsImV4cCI6MjA3NzY2OTcyNH0.8AOdXZtF3kaNnJ8dSEpEinD4RZM7GEy-nVtTV3o81B4')
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-# Serve static files (HTML, JS, CSS)
+# Serve static files (HTML)
 @app.route('/')
 def home():
     return render_template('index.html')
@@ -37,6 +37,7 @@ def signup():
         username = data.get('username')
         password = data.get('password')
         profile_image = request.files.get('profile_image')
+        profile_image_url = data.get('profile_image_url')  # Optional URL field
 
         # Validate required fields
         if not all([name, email, phone, username, password]):
@@ -58,7 +59,7 @@ def signup():
             return jsonify({'error': auth_response.error.message if auth_response.error else 'Signup failed'}), 400
 
         user = auth_response.user
-        image_url = None
+        image_url = profile_image_url or 'https://buenbdkodjrpzsfjsddu.supabase.co/storage/v1/object/public/profiles/bg.png'  # Default URL
         if profile_image:
             filename = secure_filename(f"{user.id}.{profile_image.filename.split('.')[-1]}")
             file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
@@ -72,7 +73,6 @@ def signup():
             if upload_response.error:
                 return jsonify({'error': 'Image upload failed: ' + upload_response.error.message}), 400
 
-            # Get public URL
             image_url = supabase.storage.from_('profiles').get_public_url(filename).data['publicUrl']
 
         # Insert into users table
@@ -136,6 +136,7 @@ def update_user(user_id):
         username = data.get('username')
         phone = data.get('phone')
         profile_image = request.files.get('profile_image')
+        profile_image_url = data.get('profile_image_url')
 
         update_data = {}
         if name:
@@ -144,6 +145,8 @@ def update_user(user_id):
             update_data['username'] = username
         if phone:
             update_data['phone'] = phone
+        if profile_image_url:
+            update_data['profile_image'] = profile_image_url
 
         if profile_image:
             filename = secure_filename(f"{user_id}.{profile_image.filename.split('.')[-1]}")
@@ -181,4 +184,4 @@ def delete_user(user_id):
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=int(os.getenv('PORT', 5000)))
