@@ -1,80 +1,55 @@
-from flask import Flask, render_template, request, redirect, session
+from flask import Flask, request, jsonify
 from supabase import create_client, Client
-import smtplib, random, socket
-from email.mime.text import MIMEText
 
 app = Flask(__name__)
-app.secret_key = "25e3f77d9bdc90e64fd4e97b78a67022"
 
-# Supabase credentials
+# ---- Supabase config ----
 SUPABASE_URL = "https://buenbdkodjrpzsfjsddu.supabase.co"
-SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ1ZW5iZGtvZGpycHpzZmpzZGR1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIwOTM3MjQsImV4cCI6MjA3NzY2OTcyNH0.8AOdXZtF3kaNnJ8dSEpEinD4RZM7GEy-nVtTV3o81B4"
+SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ1ZW5iZGtvZGpycHpzZmpzZGR1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIwOTM3MjQsImV4cCI6MjA3NzY2OTcyNH0.8AOdXZtF3kaNnJ8dSEpEinD4RZM7GEy-nVtTV3o81B4"   # use anon/public key
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-# Gmail credentials
-SENDER_EMAIL = "armanhacker900@gmail.com"
-SENDER_PASS = "nzvg efkc rdhz jiad"
+@app.route("/")
+def home():
+    return "✅ Flask + Supabase on Render works!"
 
-otp_data = {}
+# CREATE user
+@app.route("/add_user", methods=["POST"])
+def add_user():
+    data = request.json
+    res = supabase.table("users").insert({
+        "name": data.get("name"),
+        "username": data.get("username"),
+        "email": data.get("email"),
+        "phone": data.get("phone"),
+        "ip_address": data.get("ip_address", "0.0.0.0"),
+        "profile_photo": data.get("profile_photo", "https://buenbdkodjrpzsfjsddu.supabase.co/storage/v1/object/public/profiles/bg.png")
+    }).execute()
+    return jsonify(res.data)
 
-def get_ip():
-    hostname = socket.gethostname()
-    ip_address = socket.gethostbyname(hostname)
-    return ip_address
+# READ all users
+@app.route("/users", methods=["GET"])
+def get_users():
+    res = supabase.table("users").select("*").execute()
+    return jsonify(res.data)
 
-@app.route('/')
-def index():
-    return render_template('index.html')
+# UPDATE user
+@app.route("/update_user/<email>", methods=["PUT"])
+def update_user(email):
+    data = request.json
+    res = supabase.table("users").update({
+        "name": data.get("name"),
+        "username": data.get("username"),
+        "phone": data.get("phone"),
+        "profile_photo": data.get("profile_photo")
+    }).eq("email", email).execute()
+    return jsonify(res.data)
 
-@app.route('/send_otp', methods=['POST'])
-def send_otp():
-    email = request.form['email']
-    name = request.form['name']
-    username = request.form['username']
-    phone = request.form['phone']
-    otp = str(random.randint(100000, 999999))
+# DELETE user
+@app.route("/delete_user/<email>", methods=["DELETE"])
+def delete_user(email):
+    res = supabase.table("users").delete().eq("email", email).execute()
+    return jsonify(res.data)
 
-    otp_data[email] = {"otp": otp, "info": {"name": name, "username": username, "phone": phone}}
-
-    msg = MIMEText(f"Your OTP for login/signup is: {otp}")
-    msg['Subject'] = "Your OTP Code"
-    msg['From'] = SENDER_EMAIL
-    msg['To'] = email
-
-    try:
-        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
-            smtp.login(SENDER_EMAIL, SENDER_PASS)
-            smtp.send_message(msg)
-        return render_template('otp.html', email=email)
-    except Exception as e:
-        return f"Error sending OTP: {e}"
-
-@app.route('/verify_otp', methods=['POST'])
-def verify_otp():
-    email = request.form['email']
-    entered_otp = request.form['otp']
-
-    if email in otp_data and otp_data[email]['otp'] == entered_otp:
-        user_info = otp_data[email]['info']
-        ip_address = request.remote_addr or get_ip()
-
-        supabase.table("users").insert({
-            "name": user_info['name'],
-            "username": user_info['username'],
-            "email": email,
-            "phone": user_info['phone'],
-            "ip_address": ip_address,
-            "profile_photo": ""
-        }).execute()
-
-        return redirect('/complete')
-    else:
-        return "Invalid OTP. Please try again."
-
-@app.route('/complete')
-def complete():
-    return render_template('complete.html')
-
-# 🟢 Add this part only if you want to test locally:
 if __name__ == "__main__":
+    # For local testing
     app.run(host="0.0.0.0", port=5000, debug=True)
