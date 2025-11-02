@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Enter OTP</title>
+  <style>
+    body {
+      font-family: Poppins, sans-serif;
+      background: linear-gradient(135deg, #141e30, #243b55);
+      color: white;
+      text-align: center;
+      padding-top: 100px;
+    }
+    input { padding: 10px; width: 200px; border-radius: 8px; border: none; }
+    button {
+      background: #ff6b6b; color: white; border: none;
+      padding: 10px 25px; border-radius: 8px; cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <h2>OTP sent to {{email}}</h2>
+  <form method="POST" action="/verify_otp">
+    <input type="hidden" name="email" value="{{email}}">
+    <input type="text" name="otp" placeholder="Enter OTP" required><br><br>
+    <button type="submit">Verify</button>
+  </form>
+</body>
+</html>
