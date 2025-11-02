@@ -1,4 +1,3 @@
-
-goincorn
+gunicorn
 flask
 supabase
