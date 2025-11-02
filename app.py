@@ -1,23 +1,20 @@
 from flask import Flask, render_template, request, redirect, session
 from supabase import create_client, Client
-import smtplib
-import random
-import socket
+import smtplib, random, socket
 from email.mime.text import MIMEText
 
 app = Flask(__name__)
 app.secret_key = "25e3f77d9bdc90e64fd4e97b78a67022"
 
-# 🟢 Supabase credentials
+# Supabase credentials
 SUPABASE_URL = "https://buenbdkodjrpzsfjsddu.supabase.co"
 SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ1ZW5iZGtvZGpycHpzZmpzZGR1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIwOTM3MjQsImV4cCI6MjA3NzY2OTcyNH0.8AOdXZtF3kaNnJ8dSEpEinD4RZM7GEy-nVtTV3o81B4"
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-# 🟡 Email OTP setup
+# Gmail credentials
 SENDER_EMAIL = "armanhacker900@gmail.com"
-SENDER_PASS = "nzvg efkc rdhz jiad"  # your app password
+SENDER_PASS = "nzvg efkc rdhz jiad"
 
-# 🔢 Store OTP temporarily
 otp_data = {}
 
 def get_ip():
@@ -38,8 +35,7 @@ def send_otp():
     otp = str(random.randint(100000, 999999))
 
     otp_data[email] = {"otp": otp, "info": {"name": name, "username": username, "phone": phone}}
-    
-    # Send OTP via Gmail
+
     msg = MIMEText(f"Your OTP for login/signup is: {otp}")
     msg['Subject'] = "Your OTP Code"
     msg['From'] = SENDER_EMAIL
@@ -79,5 +75,6 @@ def verify_otp():
 def complete():
     return render_template('complete.html')
 
-if __name__ == '__main__':
-    app.run(debug=True)
+# 🟢 Add this part only if you want to test locally:
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000, debug=True)
